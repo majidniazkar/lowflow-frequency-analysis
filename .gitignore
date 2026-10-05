@@ -1,0 +1,32 @@
+# Discharge records and projection workbooks are not redistributed here.
+data/*.xlsx
+data/*.xls
+data/*.csv
+!data/README.md
+
+# Analysis output
+out/
+*.png
+*.pdf
+*.svg
+!docs/**/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

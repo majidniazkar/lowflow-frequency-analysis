@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lowflow"
+version = "1.1.0"
+description = "Univariate and bivariate extreme low-flow (drought) frequency analysis of river discharge records"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = [
+    "hydrology", "drought", "low flow", "extreme value analysis",
+    "generalised extreme value", "GEV", "copula", "return period", "7Q10",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Hydrology",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "statsmodels>=0.14",
+    "openpyxl>=3.1",
+    "lmoments3>=1.0.6",
+]
+
+# Fill in before the first release, or delete this table.
+# authors = [{ name = "Majid Niazkar", email = "mjnk23@gmail.com" }]
+
+[project.optional-dependencies]
+notebooks = ["jupyterlab>=4.0", "ipykernel>=6.25"]
+
+[tool.setuptools]
+packages = ["lowflow"]
