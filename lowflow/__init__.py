@@ -1,8 +1,8 @@
 """Low-flow (drought) frequency analysis: marginals, copulas, figures.
 
-A Python port of a set of R scripts for extreme low-flow analysis of gauged
-discharge records, with the defects found in the review of those scripts
-corrected. See README.md for the finding-by-finding mapping.
+Univariate and bivariate frequency analysis of annual and seasonal minimum
+river discharge. See README.md for the workflow and docs/CONVENTIONS.md for
+the conventions and the failure modes they guard against.
 
 Typical use::
 

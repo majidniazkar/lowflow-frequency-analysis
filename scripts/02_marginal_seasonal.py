@@ -1,13 +1,7 @@
 """Univariate low-flow frequency analysis, SEASONAL block minima.
 
-Port of ``Marginal_Seas.R``.
-
 On the season choice
 --------------------
-The R script hard-coded a three-month window. It also built a table flagging
-whether each year's annual minimum actually fell inside that window -- and then
-never summarised it.
-
 This script does not assume a season. It ranks every contiguous 3-to-5-month
 window by **capture rate** -- the fraction of annual minima the window actually
 contains -- and takes the top-ranked one via :func:`lowflow.best_season`. The

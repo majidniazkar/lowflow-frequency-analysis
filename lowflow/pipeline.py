@@ -1,12 +1,13 @@
 """End-to-end pipelines, driven by configuration rather than by copy-paste.
 
-The R original was five scripts that were near-copies of one another, and four
-of the review findings were caused by drift between those copies: the
-projection script still wrote into the observed-record output folder (A4), the
-seasonal copula script recomputed its observation cloud with the wrong block
-definition (A5), the normal-copula figure kept the Gumbel label table (B1), and
-the ``D``-day switch was live in one copy, dead in another and absent from the
-third (C3). Those are not statistics mistakes; they are duplication mistakes.
+There is ONE univariate and ONE bivariate implementation here, and the five
+analysis scripts differ only by a configuration object. Near-duplicate copies
+of an analysis drift in ways that are invisible in review and expensive in
+results: an output directory that still points at another run's folder, an
+observation cloud recomputed with a different block definition from the curve
+it is plotted against, a figure labelled from a different fit's table, an
+averaging-window switch that is live in one copy and dead in another. Those
+are not statistics mistakes, which is exactly why they survive.
 
 So there is exactly one univariate implementation and one bivariate
 implementation here. The five scripts in ``scripts/`` differ only by a
@@ -309,10 +310,12 @@ def run_univariate(cfg: UnivariateConfig) -> dict:
 def _joint_records(ra: FlowRecord, rb: FlowRecord) -> tuple[FlowRecord, FlowRecord]:
     """Restrict two records to the days on which BOTH carry a valid D-day mean.
 
-    The R scripts did this implicitly with ``inner_join`` on date and never
-    reported it. Doing it explicitly means the per-block coverage screen counts
-    *common* days, so a year in which the two gauges have disjoint gaps is
-    rejected rather than contributing a spurious joint minimum.
+    Doing this explicitly, and reporting it, means the per-block coverage screen
+    counts *common* days, so a year in which the two gauges have disjoint gaps
+    is rejected rather than contributing a spurious joint minimum. Note the
+    masking: non-common days are set to NaN over the full span rather than
+    reindexed away, because reindexing onto the common days alone would make
+    every coverage exactly 1 and silently disable the screen.
     """
     ia, ib = pd.DatetimeIndex(ra.daily.index), pd.DatetimeIndex(rb.daily.index)
     if (ia.tz is None) != (ib.tz is None):
@@ -426,8 +429,8 @@ def run_bivariate(cfg: BivariateConfig) -> dict:
                 log(f"    note ({k}): {'; '.join(v.notes)}")
     mx = marg[cfg.name_x][best_marg[cfg.name_x]]
     my = marg[cfg.name_y][best_marg[cfg.name_y]]
-    log(f"\n    NOTE: the R scripts fixed Pearson III for both rivers after testing")
-    log(f"    only one of them. Here each river's marginal is selected on its own evidence:")
+    log(f"\n    NOTE: each river's marginal is selected on its own evidence, not")
+    log(f"    fixed to one family after testing a single gauge:")
     log(f"    {cfg.name_x} -> {best_marg[cfg.name_x]}, {cfg.name_y} -> {best_marg[cfg.name_y]}.")
 
     # 4. dependence ---------------------------------------------------------
@@ -505,9 +508,8 @@ def run_bivariate(cfg: BivariateConfig) -> dict:
     log.table(or_tab)
     _csv(or_tab, out, "or_design_points", written)
     log("\n    AND, OR and Kendall are three different definitions of a 'T-year joint")
-    log("    drought' and give different discharges. Whichever is quoted must be named;")
-    log("    the R scripts reported AND only, and labelled the figure with the")
-    log("    opposite inequality.")
+    log("    drought' and give different discharges. Whichever is quoted must be named,")
+    log("    and the figure caption must state the same inequality as the table.")
 
     curves = pd.concat([cop.and_curve(model, T, mx, my, n=400) for T in cfg.T],
                        ignore_index=True)

@@ -1,14 +1,14 @@
 """Block-minimum extraction with explicit coverage screening and season checks.
 
-Two findings from the R review are implemented here:
+Two rules are enforced here:
 
-* **C2** -- a block is only used if it has enough valid days. ``min_coverage``
-  is a fraction of the days *available in the block*, so the same threshold
-  works for a 365-day annual block and a 92-day seasonal one.
-* **C4** -- :func:`season_diagnostic` answers the question the R script set up
-  but never evaluated: how often does the annual minimum actually fall inside
-  the chosen season? :func:`scan_seasons` ranks candidate windows by that
-  capture rate, so the season is chosen from the record instead of assumed.
+* a block is used only if it has enough valid days. ``min_coverage`` is a
+  fraction of the days *available in the block*, so the same threshold works
+  for a 365-day annual block and a 92-day seasonal one.
+* the season is chosen from the record, not assumed.
+  :func:`season_diagnostic` reports how often the annual minimum actually
+  falls inside a given window, :func:`scan_seasons` ranks every candidate
+  window by that capture rate, and :func:`best_season` returns the one to use.
 """
 
 from __future__ import annotations

@@ -9,13 +9,11 @@ Equivalently ``u = 1 - F_Q(q)``, so
     u near 1  <=>  very low discharge  <=>  deep drought
     u near 0  <=>  high discharge
 
-This is the same convention the R scripts used (they fitted the copula to
-``-minima``), and it is the convenient one: the joint drought event is the
-*upper* set, so a copula with upper-tail dependence -- Gumbel, Joe, survival
-Clayton -- is the one that represents simultaneous drought. Plain Clayton on
-these variables is the **wrong tail**: it imposes asymptotic independence in
-joint drought, which is why testing it as a candidate (as the R script did) and
-then never fitting it was the right instinct for the wrong reason.
+This is the convenient orientation: the joint drought event is the *upper*
+set, so a copula with upper-tail dependence -- Gumbel, Joe, survival Clayton
+-- is the one that represents simultaneous drought. Plain Clayton on these
+variables is the **wrong tail**: it imposes asymptotic independence in joint
+drought, so it does not belong in a candidate set here.
 
 The single conversion back to discharge is :func:`discharge_from_u`, so the sign
 flip appears exactly once.
@@ -30,13 +28,13 @@ OR               at least one below its threshold            ``1 - C(u,v)``
 Kendall          inside the critical layer rarer than *p*    ``P(Chat(U,V) <= p)``
 ===============  ========================================  ==========================
 
-Fixes from the R review implemented here: **A2** rank-based pseudo-observations
-and maximum-pseudo-likelihood estimation (no saturating parametric transform, no
-``fitCopula`` crash); **B2** level curves solved with Brent's method instead of
-filtered off a grid, so they are exactly on the contour and correctly ordered;
-**B3** AIC and a bootstrap goodness-of-fit for every candidate, plus Kendall's
-tau and tail-dependence coefficients; **B5** OR and Kendall return periods and
-the most-likely design realisation alongside AND.
+Estimation and reporting rules, stated once: pseudo-observations are rank
+based and copulas are fitted by maximum pseudo-likelihood, so no parametric
+probability transform can saturate; level curves are solved with Brent's
+method, so they lie exactly on the contour and are correctly ordered; every
+candidate gets AIC and a bootstrap goodness-of-fit alongside Kendall's tau
+and the tail-dependence coefficient; and OR, Kendall and the most-likely
+design realisation are reported alongside AND.
 """
 
 from __future__ import annotations
@@ -461,11 +459,11 @@ class CopulaModel:
 def fit_copula(family: "str | Family", u: np.ndarray) -> CopulaModel:
     """Maximum-pseudo-likelihood fit on rank-based pseudo-observations.
 
-    MPL is the standard semiparametric estimator: it uses only the ranks, so the
-    dependence estimate is not contaminated by marginal misfit. The R scripts
-    used ``method = "ml"`` on parametric CDF values instead, which both risks
-    the saturation crash and gives different answers -- 3.4355 vs 3.2201 for the
-    Gumbel parameter on the same sample.
+    MPL is the standard semiparametric estimator: it uses only the ranks, so
+    the dependence estimate is not contaminated by marginal misfit. Fitting on
+    parametric CDF values instead both risks a saturating transform and gives
+    a different answer -- 3.4355 against 3.2201 for the Gumbel parameter on
+    one sample tested here.
     """
     fam = FAMILIES[family] if isinstance(family, str) else family
     u = np.asarray(u, float)
@@ -531,9 +529,9 @@ def _sn(model: CopulaModel) -> float:
 def gof_sn(model: CopulaModel, *, B: int = 499, rng=None) -> dict:
     """Parametric-bootstrap Cramer-von Mises test (the ``gofCopula`` 'Sn' method).
 
-    The R scripts ran this with ``N = 100``, whose Monte-Carlo standard error on
-    a p-value near 0.5 is about +/-0.05 -- too coarse to separate candidates.
-    ``B = 499`` or more is the practical minimum; 999 for anything reported.
+    At ``B = 100`` the Monte-Carlo standard error on a p-value near 0.5 is
+    about +/-0.05, too coarse to separate candidates. ``B = 499`` is the
+    practical minimum; use 999 for anything reported.
     """
     rng = np.random.default_rng(rng)
     s_obs = _sn(model)
@@ -576,9 +574,10 @@ def compare_copulas(fits: dict, *, B: int = 499, rng=None) -> pd.DataFrame:
 def dependence_summary(u: np.ndarray) -> pd.DataFrame:
     """Non-parametric dependence measures, model-free.
 
-    Includes the Capreaa-Fougeres-Genest estimator of the upper-tail (i.e. joint
-    drought) dependence coefficient. The R scripts reported no dependence
-    measure at all, so there was nothing to judge the copula choice against.
+    Includes the Caperaa-Fougeres-Genest estimator of the upper-tail (i.e.
+    joint drought) dependence coefficient. These are what the fitted copula's
+    tau and lambda_drought have to answer to; without them a copula choice
+    cannot be judged at all.
     """
     a, b = u[:, 0], u[:, 1]
     kt = stats.kendalltau(a, b)
@@ -642,8 +641,9 @@ def or_probability(model: CopulaModel, u, v):
 def and_design_point(model: CopulaModel, T, marg_x, marg_y) -> pd.DataFrame:
     """The equal-droughtiness point (u = v) on the AND curve of return period T.
 
-    This is the design point the R function computed. It is *a* point on the
-    curve, not the only one -- see :func:`most_likely_design_point`.
+    This is *a* point on the curve, not the only one -- it is the conventional
+    summary, and :func:`most_likely_design_point` answers the usually more
+    useful question of what such a drought most probably looks like.
     """
     T = np.atleast_1d(np.asarray(T, float))
     rows = []
@@ -669,11 +669,10 @@ def and_design_point(model: CopulaModel, T, marg_x, marg_y) -> pd.DataFrame:
 def and_curve(model: CopulaModel, T, marg_x, marg_y, *, n: int = 300) -> pd.DataFrame:
     """Solve the AND level curve exactly, by root-finding in v for each u.
 
-    Replaces the R approach of filtering a 200x200 grid with ``abs(P - 1/T) <
-    0.001``, which produced between 37 and 396 points depending on T, left them
-    in grid order so ``geom_path`` zig-zagged (31 order reversals at T = 2), and
-    returned nothing at all when the tolerance missed. Here every returned point
-    is on the contour to machine tolerance and ordered monotonically in u.
+    Every returned point is on the contour to machine tolerance and ordered
+    monotonically in u. Selecting near-contour points off a grid instead gives
+    an uneven number of points that depends on T, leaves them in grid order so
+    a path plot zig-zags, and returns nothing at all when the tolerance misses.
     """
     target = 1.0 / float(T)
     us = np.linspace(_EPS, 1 - _EPS, n)

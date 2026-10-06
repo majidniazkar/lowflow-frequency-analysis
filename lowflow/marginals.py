@@ -6,20 +6,18 @@ non-exceedance probability P(Q <= q), ``ppf(p)`` is always a discharge, and the
 T-year low flow is always ``ppf(1/T)``. The GEV is still *estimated* on -Q (block
 minima become block maxima, which is what extreme-value theory describes), but
 that sign flip is confined to :class:`GEVMinima` and never escapes into user
-code. In the R scripts the flip was spread across six call sites -- ``fevd`` on
-``low_flows_neg``, ``dgev(-x, ...)``, ``-qgev(ppoints(n), ...)``,
-``ks.test(low_flows_neg, ...)`` -- which is what made the Q-Q plot correct only
-by accident and the return levels easy to get wrong.
+code. A sign flip spread across several call sites is the classic way to get a
+low-flow return level wrong by a tail, so it lives in exactly one place.
 
-Implemented here, addressing the R review:
+Three rules follow from that design:
 
-* **A3** -- :func:`compare` ranks by AIC, and :func:`ad_test` is an
-  Anderson-Darling test with a *parametric bootstrap* null, because the
-  Kolmogorov-Smirnov p-value with estimated parameters is invalid (measured
-  rejection rate 0.000 at alpha=0.05, median p 0.919).
-* **B6** -- every fit exposes :meth:`return_level_ci`: profile likelihood for
-  the GEV, parametric bootstrap for the others.
-* **C5** -- :class:`GEVMinimaNS` fits a trend in the location parameter and
+* :func:`compare` ranks by AIC, and :func:`ad_test` is an Anderson-Darling
+  test with a *parametric bootstrap* null, because the Kolmogorov-Smirnov
+  p-value with estimated parameters is invalid (measured rejection rate 0.000
+  at alpha=0.05, median p 0.919).
+* every fit exposes :meth:`return_level_ci`: profile likelihood for the GEV,
+  parametric bootstrap for the others.
+* :class:`GEVMinimaNS` fits a trend in the location parameter and
   :func:`lr_test` compares it against the stationary fit, for projection series
   where a stationary fit is indefensible.
 """
@@ -280,7 +278,7 @@ class GEVMinima(Marginal):
         mu, sig, xi = self._x()
         return -(mu - sig / xi) if xi < 0 else -np.inf
 
-    # -- profile likelihood CI (R finding B6) --------------------------------
+    # -- profile likelihood confidence interval ------------------------------
     def _profile_nllh(self, q_T, p_exceed):
         """min over (sigma, xi) of the nllh with the return level fixed at q_T."""
         x = -self.data
@@ -360,9 +358,9 @@ class GEVMinimaNS(Marginal):
     so **``mu1 > 0`` means drying** (the negated minima are trending up).
 
     Use :func:`lr_test` against the stationary :class:`GEVMinima` to decide
-    whether the trend is supported. This is the fix for R finding C5: the
-    projection script ran Mann-Kendall and then fitted a stationary model
-    regardless.
+    whether the trend is supported. A Mann-Kendall test on the block minima is
+    not a substitute: it says whether a monotone tendency is present, not
+    whether the extreme-value model should carry one.
     """
 
     name: str = "GEV (non-stationary location)"
@@ -448,9 +446,10 @@ class PearsonIII(Marginal):
     ``scipy.stats.pearson3`` takes ``(skew, loc, scale)`` which is exactly
     lmomco's ``(gamma, mu, sigma)``, so the two agree parameter for parameter.
     Note the hard support bound at ``loc - 2*scale/skew`` for positive skew: an
-    observation outside it makes ``cdf`` return exactly 0 or 1, which is what
-    broke ``fitCopula`` in the R scripts (16.5% of 60-year samples). The bound
-    is recorded in :attr:`notes` when it bites.
+    observation outside it makes ``cdf`` return exactly 0 or 1, which is also
+    what breaks a copula fitted on parametric probability values (it happened
+    in 16.5% of synthetic 60-year samples). The bound is recorded in
+    :attr:`notes` when it bites.
     """
 
     name: str = "Pearson III"
@@ -616,9 +615,9 @@ def ad_test(fit, *, B: int = 499, rng=None) -> dict:
 def ks_test_naive(fit) -> dict:
     """Kolmogorov-Smirnov against the fitted cdf, parameters estimated in-sample.
 
-    Provided only for comparison with the R scripts. The p-value is **not
-    valid** -- the null distribution of D is not the Kolmogorov one once the
-    parameters have been estimated from the same sample. Simulation with data
+    Reported for contrast only. The p-value is **not valid** -- the null
+    distribution of D is not the Kolmogorov one once the parameters have been
+    estimated from the same sample. Simulation with data
     drawn from a true gamma and Pearson III fitted to it gives a rejection rate
     of 0.000 at alpha=0.05 and a median p-value of 0.92, so ranking candidate
     distributions by this number ranks noise. Use :func:`ad_test`.
@@ -713,9 +712,8 @@ def theoretical_lmom_curve(family: str, t3=np.linspace(-0.4, 0.6, 121)):
 def trend_tests(values, years=None) -> pd.DataFrame:
     """Mann-Kendall trend, Theil-Sen slope, lag-1 autocorrelation, Ljung-Box.
 
-    Replaces the R scripts' ``MannKendall`` + ``Box.test(lag = 10)`` pair. The
-    Ljung-Box lag is reduced to a data-driven ``min(10, n//5)`` because lag 10
-    on a 55-point series has almost no power.
+    The Ljung-Box lag is data driven, ``min(10, n//5)``: a fixed lag of 10 on a
+    55-point series has almost no power.
     """
     v = np.asarray(values, float)
     n = len(v)

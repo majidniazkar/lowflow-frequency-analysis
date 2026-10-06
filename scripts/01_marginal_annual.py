@@ -1,9 +1,12 @@
 """Univariate low-flow frequency analysis, ANNUAL block minima.
 
-Port of ``Marginal.R``. Fits GEV / Pearson III / Gamma / Weibull to the annual
-minimum D-day mean discharge, selects by AIC, tests fit by bootstrap
-Anderson-Darling, and reports return levels with profile-likelihood confidence
-intervals.
+Fits GEV / Pearson III / Gamma / Weibull to the annual minimum D-day mean
+discharge, selects by AIC, tests fit by bootstrap Anderson-Darling, and
+reports return levels with confidence intervals.
+
+Annual blocks need no assumption about when the basin runs dry, which makes
+this the right starting point; move to script 02 only if a seasonal window
+captures the annual minimum often enough to be worth using.
 
 Run from the repository root:  python scripts/01_marginal_annual.py
 """
@@ -17,8 +20,8 @@ from lowflow.pipeline import UnivariateConfig, run_univariate
 
 # --- configuration ---------------------------------------------------------
 # D = 7 gives the 7-day mean behind the conventional MAM7 / 7Q10 low-flow
-# index. The R script had D = 1 (single-day minimum), which is noisier and more
-# sensitive to gauging error at low stage. Set D = 1 to reproduce it.
+# index. D = 1 is the single-day minimum: noisier, and more sensitive to
+# gauging error at low stage.
 CFG = UnivariateConfig(
     # Point these at your own workbook; the two columns must be date and flow.
     path="data/station_a.xlsx",

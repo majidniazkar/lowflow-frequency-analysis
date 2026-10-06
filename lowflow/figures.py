@@ -162,9 +162,9 @@ def fig_density_fits(x, fits: dict, *, unit="m$^3$/s", title=None):
 def fig_qq(x, fits: dict, *, unit="m$^3$/s", title=None):
     """Q-Q panel, one per family, all in discharge space.
 
-    The sign handling that made the R version correct only by accident is gone:
     ``ppf`` is always a discharge, so the theoretical quantile for the i-th
-    smallest observation is just ``ppf(p_i)``.
+    smallest observation is just ``ppf(p_i)`` -- no sign handling at the call
+    site, which is the point of confining the flip to ``GEVMinima``.
     """
     x = np.sort(np.asarray(x, float))
     pp = plotting_positions(x)
@@ -330,8 +330,8 @@ def fig_and_curves(curves: pd.DataFrame, design: pd.DataFrame, obs_x, obs_y,
 
     Each curve is the locus of threshold pairs whose *joint drought*
     probability -- both rivers simultaneously below their threshold -- equals
-    1/T. Solved by root-finding, so the curves are exactly on the contour and
-    monotone; the R version filtered a grid and zig-zagged.
+    1/T. Solved by root-finding, so every point is on the contour to machine
+    tolerance and the curve is monotone in ``u`` and evenly sampled.
     """
     fig, ax = plt.subplots(figsize=(6.0, 4.4))
     Ts = sorted(curves["T"].unique())

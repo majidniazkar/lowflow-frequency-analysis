@@ -1,14 +1,15 @@
 """Reading, regularising and screening daily discharge records.
 
-This module exists because three of the findings in the R review were data-layer
-problems, not statistics problems:
+Three data-layer rules decide more about a low-flow result than the choice of
+distribution does:
 
-* the D-day moving average was computed *after* invalid rows had been deleted, so
-  the window silently averaged across calendar gaps (R finding C3);
-* no per-year coverage requirement, so a year with 30 valid days contributed a
-  "minimum" on equal footing with a year with 365 (C2);
-* zero flows were dropped by ``flow > 0``, which removes the most informative
-  observations in a drought study and biases the low tail upward (C1).
+* the D-day moving average is rolled over a gap-free daily calendar, and a
+  window containing a missing day is NaN rather than an average of whichever
+  days happen to be present;
+* a block carries a coverage fraction, so a year with 30 valid days need not
+  contribute a "minimum" on equal footing with a year with 365;
+* zero flows are kept. They are the most informative observations in a drought
+  study, and dropping them biases the low tail upward.
 
 The order of operations here is deliberate and is the whole point of the module:
 **regularise to a gap-free daily index first, then roll, then screen.**
@@ -38,9 +39,9 @@ class ZeroPolicy:
                         left-censored. Use when the fitted distribution has
                         support on (0, inf) and a hard zero breaks the
                         likelihood, e.g. a two-parameter Weibull.
-        ``"drop"``   -- delete them. This is what the R scripts did. Kept only
-                        so the old behaviour can be reproduced on demand; it
-                        biases every low-flow statistic upward.
+        ``"drop"``   -- delete them. Available for comparison with analyses
+                        that exclude zeros; it biases every low-flow statistic
+                        upward and should not be the reporting choice.
     floor
         Replacement value used by ``"censor"``.
     """
@@ -120,10 +121,10 @@ def read_flow(
 ) -> FlowRecord:
     """Load a daily discharge series and prepare it for block-minimum extraction.
 
-    Accepts ``.xlsx``/``.xls`` (via openpyxl) or ``.csv``. Unlike the R scripts
-    this does **not** silently drop rows: invalid values become NaN so that the
-    rolling mean can refuse to average across them, and every removal is counted
-    in :attr:`FlowRecord.diagnostics`.
+    Accepts ``.xlsx``/``.xls`` (via openpyxl) or ``.csv``. Rows are never
+    silently dropped: invalid values become NaN so that the rolling mean can
+    refuse to average across them, and every removal is counted in
+    :attr:`FlowRecord.diagnostics`.
 
     Parameters
     ----------
@@ -198,7 +199,7 @@ def read_flow(
     elif zero_policy.mode == "censor":
         df.loc[zeros, "flow"] = zero_policy.floor
 
-    # --- the fix for R finding C3: regularise BEFORE rolling -----------------
+    # --- regularise onto a complete daily calendar BEFORE rolling ------------
     full = pd.date_range(df["date"].min(), df["date"].max(), freq="D")
     daily = df.set_index("date").reindex(full).rename_axis("date")
     diag["first_date"] = str(full[0].date())

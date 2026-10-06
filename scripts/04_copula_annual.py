@@ -1,19 +1,18 @@
 """Bivariate joint low-flow analysis, two gauges, ANNUAL block minima.
 
-Port of ``copula.R``. Differences that change the numbers:
+How the dependence is estimated and reported:
 
-* Copulas are fitted by maximum pseudo-likelihood on **ranks**, not maximum
-  likelihood on Pearson III probability values. The parametric route saturates
-  at 0 or 1 whenever a sample extreme falls on the fitted support bound, which
-  happened in 16.5% of synthetic 60-year samples and makes ``fitCopula`` fail
-  outright; it also gave a different answer (Gumbel theta 3.44 vs 3.22).
-* Six candidate copulas are fitted and ranked by AIC with a bootstrap
-  Cramer-von Mises test at 499 replicates, instead of naming Gumbel "best"
-  before any test and running the test at 100 replicates.
-* Each river's marginal is selected on its own evidence rather than fixing
-  Pearson III for both after testing only one of them.
-* AND curves are solved by root-finding, so they are exactly on the contour and
-  correctly ordered.
+* Copulas are fitted by maximum pseudo-likelihood on **ranks**, never by
+  maximum likelihood on parametric probability values. A parametric transform
+  saturates at 0 or 1 whenever a sample extreme falls on the fitted support
+  bound -- it happened in 16.5% of synthetic 60-year samples tested here --
+  which both breaks the fit and shifts the answer when it does not.
+* Candidates are ranked by AIC with a bootstrap Cramer-von Mises test at 499
+  replicates, so no family is named best before it has been tested.
+* Each river's marginal is selected on its own evidence rather than fixed to
+  one family after testing a single gauge.
+* AND curves are solved by root-finding, so they are exactly on the contour
+  and correctly ordered.
 * AND, OR and Kendall joint return periods are all reported, plus the
   most-likely realisation on each AND curve.
 

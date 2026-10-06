@@ -1,4 +1,4 @@
-# lowflow — extreme low-flow (drought) frequency analysis in Python
+# lowflow — extreme low-flow (drought) frequency analysis
 
 Univariate and bivariate frequency analysis of annual and seasonal **minimum**
 river discharge: block-minimum extraction with coverage screening, marginal
@@ -6,10 +6,13 @@ fitting with AIC selection and bootstrap goodness-of-fit, low-flow return
 levels with confidence intervals, non-stationary GEV for climate projections,
 and bivariate copulas with AND / OR / Kendall joint return periods.
 
-Written as a port of an earlier R implementation, with the defects found in a
-review of that implementation corrected. Nothing in it is specific to a basin,
-a season or a pair of gauges: station names come from your own workbooks, and
-the low-flow season is selected from the record rather than assumed.
+Two independent implementations are included, one in **Python** and one in
+**R**, following the same conventions. Either can be used on its own; running
+both on one record is a cross-check, since they share no code.
+
+Nothing here is specific to a basin, a season or a pair of gauges: station
+names come from your own workbooks, and the low-flow season is selected from
+the record rather than assumed.
 
 Not for flood or high-flow analysis. Everything here is oriented around minima.
 
@@ -24,6 +27,14 @@ pip install -e .
 
 Requires Python 3.10+, `numpy`, `scipy`, `pandas`, `matplotlib`, `statsmodels`,
 `openpyxl` and `lmoments3`. For the notebooks: `pip install -e ".[notebooks]"`.
+
+For the R implementation, see [`R/README.md`](R/README.md):
+
+```r
+install.packages(c("readxl", "writexl", "zoo", "lmomco", "fitdistrplus",
+                   "copula", "Kendall", "ggplot2"))
+source("R/lowflow.R")
+```
 
 ## Quickstart
 
@@ -82,16 +93,20 @@ scripts/
   04_copula_annual.py         joint annual drought, two rivers
   05_copula_seasonal.py       joint seasonal drought, two rivers
 notebooks/                    the same five analyses, narrated, outputs stripped
+R/                            the R implementation (see R/README.md)
+scripts_R/                    the same six scripts in R
 docs/
-  CONVENTIONS.md              house conventions, orientation, and traps that have bitten
-  R_COMPARISON.md             cross-validation against R, and when to prefer which
+  CONVENTIONS.md              conventions, orientation, and failure modes to know about
+  CROSS_LANGUAGE.md           what R and Python agree on, and which to work in
   API.md                      every public function and class
 ```
 
-Six scripts, but **one** univariate and **one** bivariate implementation; the
-scripts differ only by a configuration object. This is deliberate — four of the
-defects in the R predecessor were drift between five near-copies of the same
-code rather than statistical error. Never copy the pipeline to make a variant.
+Six scripts per language, but **one** univariate and **one** bivariate
+implementation in each; the scripts differ only by a configuration object.
+Never copy the pipeline to make a variant — near-duplicate copies of an
+analysis drift in ways that are invisible in review and expensive in results,
+and none of those failures is a statistics mistake, which is exactly why they
+survive. Pass a different configuration instead.
 
 ## Read this before interpreting any output
 
@@ -117,32 +132,43 @@ Three conventions are worth stating on the front page:
 - **Name the joint event.** AND, OR and Kendall are three different definitions
   of a "T-year joint drought" and give materially different discharges.
 
-## What changed from the R original
+## Design notes
 
-| Defect in the R scripts | Fix here |
-|---|---|
-| A missing `library()` call aborts both copula scripts on a clean machine | Root-finding is `scipy.optimize.brentq`; no such dependency |
-| Pearson III probability transform saturates at 0/1 and crashes the copula fit (16.5% of synthetic 60-year samples) | `pseudo_obs` uses ranks; copulas are fitted by maximum pseudo-likelihood. Parametric margins are kept only for the back-transform to discharge |
-| Ranking by a KS p-value computed with in-sample parameters cannot discriminate | `compare()` ranks by AIC; `ad_test()` is Anderson–Darling with a parametric-bootstrap null |
-| The projection script overwrites the observational figures | `outdir` is part of the configuration; titles are built from `label` |
-| The seasonal copula script plots annual minima against seasonal curves | The block definition exists once, in `season`, and is used for fit and figure alike |
-| The normal-copula figure is labelled with the Gumbel return levels | Figures take one table; the runner-up copula gets its own figure |
-| AND curves filtered off a grid: zig-zagged and unevenly sampled | `and_curve()` solves `P_AND(u,v) = 1/T` for `v` at each `u` by Brent's method |
-| "Best copula" named before any test; `N = 100`; no AIC, no tau | Candidates ranked by AIC and tested at `B = 499`; Kendall tau, Spearman rho and tail dependence reported |
-| Figure subtitle states the opposite inequality | Subtitle is generated from the event definition |
-| Only the AND scenario, only at `u = v` | AND, OR and Kendall return periods, plus the most-likely realisation on each AND curve |
-| No confidence intervals anywhere | Profile likelihood for the GEV, parametric bootstrap otherwise; drawn as a band |
-| Zeros dropped, biasing the low tail upward | `ZeroPolicy`: `keep` (default), `censor`, or `drop`; counts reported either way |
-| No per-year coverage requirement | `min_coverage` (default 0.90); rejected blocks listed and drawn as open markers |
-| D-day mean rolled across calendar gaps, and dead in two of five scripts | `read_flow` regularises to a gap-free daily index *before* rolling, with `min_periods=D`; `D = 7` is the default and live everywhere |
-| Low-flow season assumed; capture rate computed but never used | `scan_seasons` ranks every contiguous window by capture rate; the pipeline warns below 80% |
-| Stationary fit to a transient projection | `GEVMinimaNS` fits a trend in the location parameter; `lr_test` compares it to the stationary fit; fixed epochs are fitted alongside |
+The decisions that shape the numbers, in one place:
 
-Two things the R scripts did that were **correct** and are preserved: negating
-the minima so that block minima become block maxima (the Jacobian is 1, so
-densities and likelihoods carry over unchanged), and the AND-event algebra
-`1 - u - v + C(u, v)`, which is the joint *drought* probability when `u` is a
-droughtiness level.
+- **Dependence is estimated on ranks.** Pseudo-observations are rank based and
+  copulas are fitted by maximum pseudo-likelihood, so the copula cannot inherit
+  a defect of the fitted margins. A parametric probability transform saturates
+  at 0 or 1 whenever a sample extreme sits on a fitted support bound, which both
+  breaks the fit and shifts the answer when it does not break it.
+- **Each gauge gets its own marginal**, selected on its own evidence rather than
+  fixed to one family after testing a single record.
+- **Selection is by AIC with a parametric-bootstrap Anderson–Darling test** at
+  B = 499, so no family is named best before it has been tested.
+- **Every reported return level carries a confidence interval**, drawn as a band
+  on the return-level figure, and a warning fires when an interval crosses zero
+  discharge.
+- **Level curves are solved, not filtered.** `and_curve()` finds the matching
+  `v` for each `u` by Brent's method, so every point is on the contour to
+  machine tolerance and the curve is monotone and evenly sampled.
+- **AND, OR and Kendall return periods are all reported**, plus the most-likely
+  realisation on each AND contour, and each figure caption states the same
+  inequality as its table.
+- **The data layer comes first.** The D-day mean is rolled over a gap-free daily
+  calendar so a window containing a missing day is NaN; blocks are screened on
+  coverage; zeros are kept; and in the bivariate pipeline the screen counts days
+  valid at *both* gauges.
+- **The season is chosen from the record**, and a projection is analysed on the
+  season taken from the observed record at the same gauge so the two describe
+  the same event.
+- **Non-stationarity is fitted and tested**, not assumed away, with the trend
+  fit seeded from the stationary optimum so that a negative deviance is
+  recognised as an optimiser failure rather than reported as a result.
+- **The GEV sign flip lives in exactly one place.** Minima are negated so that
+  block minima become block maxima (the Jacobian is 1, so densities and
+  likelihoods carry over unchanged), and the AND-event algebra is
+  `1 - u - v + C(u, v)` — the joint *drought* probability when `u` is a
+  droughtiness level.
 
 ## Limitations
 
@@ -168,13 +194,20 @@ droughtiness level.
 
 ## Citing
 
-If this code supports a publication, please cite the repository. Fill in your
-own details:
+[![DOI](https://zenodo.org/badge/DOI/<10.5281/zenodo.XXXXXXX>.svg)](https://doi.org/<10.5281/zenodo.XXXXXXX>)
+
+If this code supports a publication, please cite the archived release. Machine-
+readable metadata is in [`CITATION.cff`](CITATION.cff); GitHub renders a "Cite
+this repository" button from it.
 
 ```
-<Majid Niazkar>. lowflow: extreme low-flow frequency analysis in Python. 2026.
+<AUTHOR>. lowflow: extreme low-flow (drought) frequency analysis.
+Version 1.1.0, 2026. DOI: <10.5281/zenodo.XXXXXXX>
 https://github.com/majidniazkar/lowflow-frequency-analysis
 ```
+
+Use the **concept** DOI (it always resolves to the latest version) in a paper;
+use the version DOI when you need to pin exactly what was run.
 
 ## Licence
 

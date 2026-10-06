@@ -6,6 +6,8 @@ data/*.csv
 
 # Analysis output
 out/
+out_R/
+*.log
 *.png
 *.pdf
 *.svg

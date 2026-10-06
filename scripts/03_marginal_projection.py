@@ -1,17 +1,16 @@
 """Univariate low-flow frequency analysis of a CLIMATE PROJECTION series.
 
-Port of ``Marginal_Proj.R``, with three changes that alter the conclusions:
+Three things matter here beyond an observational run:
 
-1. **Its own output directory.** The R version wrote its figures into the
-   observed-record folder under the observational filenames and titles,
-   overwriting the observational results with projection results.
+1. **Its own output directory**, so projection results never land under
+   observational filenames and titles.
 2. **Non-stationarity is handled, not merely tested.** A transient projection
    to 2100 is the case where a stationary GEV is least defensible. This run
    fits a trend in the GEV location parameter and compares it against the
    stationary fit by likelihood ratio, and additionally fits fixed epochs.
-3. **The D-day switch is live.** In the R version the D-day mean was computed
-   and then never used -- the minima came from the raw daily column -- so the
-   projection and observed analyses were not comparable at any D > 1.
+3. **The same averaging window as the observational run.** A projection
+   summarised at a different D is not comparable with the observed analysis
+   at all.
 
 The season is taken from the **observed** record at the same gauge, not scanned
 on the projection, so that the projected and observed analyses describe the same

@@ -1,12 +1,11 @@
 """Bivariate joint low-flow analysis, two gauges, SEASONAL block minima.
 
-Port of ``copulaseas.R``. Identical to script 04 except for the block
-definition -- which is the point: in the R pair, the seasonal copula script's
-plotting block recomputed the observation cloud from the full-year data,
-silently replacing the seasonal minima used for the fit. The curves were
-seasonal and the scatter was annual, so the points sat systematically low
-against the curves. Here the block definition lives in one place and is used
-for the fit and the figure alike.
+Identical to script 04 except for the block definition -- which is the point.
+The block definition lives in exactly one place and is used for the fit and
+the figure alike, so the observation cloud can never be recomputed on a
+different definition from the curves it is plotted against. That failure is
+quiet when it happens: seasonal curves against annual points simply look like
+observations sitting systematically low.
 
 The season is chosen from the record, as in script 02: the window with the
 highest capture rate, taken from the gauge named in ``SEASON_FROM``. Both
