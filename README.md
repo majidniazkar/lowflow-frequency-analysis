@@ -194,7 +194,7 @@ The decisions that shape the numbers, in one place:
 
 ## Citing
 
-[![DOI](https://zenodo.org/badge/DOI/<10.5281/zenodo.23182321>.svg)](https://doi.org/<10.5281/zenodo.23182321>)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23182321.svg)](https://doi.org/10.5281/zenodo.23182321)
 
 If this code supports a publication, please cite the archived release. Machine-
 readable metadata is in [`CITATION.cff`](CITATION.cff); GitHub renders a "Cite
@@ -202,7 +202,7 @@ this repository" button from it.
 
 ```
 <AUTHOR>. lowflow: extreme low-flow (drought) frequency analysis.
-Version 1.1.0, 2026. DOI: <10.5281/zenodo.XXXXXXX>
+Version 1.1.0, 2026. DOI: [[<10.5281/zenodo.23182321>](https://doi.org/10.5281/zenodo.23182321)](https://doi.org/10.5281/zenodo.23182321)
 https://github.com/majidniazkar/lowflow-frequency-analysis
 ```
 
