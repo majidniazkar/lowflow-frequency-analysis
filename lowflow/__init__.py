@@ -60,7 +60,7 @@ __all__ = [
     "trend_tests",
 ]
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 
 def check_install(search_root=None, verbose=True):
