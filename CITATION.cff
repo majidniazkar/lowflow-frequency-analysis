@@ -11,7 +11,7 @@ repository-code: "https://github.com/majidniazkar/lowflow-frequency-analysis"
 license: MIT
 version: 1.2.0
 date-released: "2026-10-06"
-#doi: "<10.5281/zenodo.XXXXXXX>"
+doi: "https://doi.org/10.5281/zenodo.23182321"
 abstract: >-
   Univariate and bivariate frequency analysis of annual and seasonal minimum
   river discharge, in Python and in R. Block-minimum extraction with coverage
