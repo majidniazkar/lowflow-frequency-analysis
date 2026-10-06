@@ -10,7 +10,7 @@
 #   install.packages(c("readxl", "writexl", "zoo", "lmomco", "fitdistrplus",
 #                      "copula", "Kendall", "ggplot2"))
 
-LOWFLOW_VERSION <- "1.0.0"
+LOWFLOW_VERSION <- "1.2.0"
 
 .lowflow_dir <- local({
   d <- NULL
