@@ -9,9 +9,9 @@ authors:
     affiliation: "Junior Scientist at Risk Assessment and Adaptation Strategies (RAAS) Department, Euro-Mediterranean Center on Climate Change, Venezia, Italy and Adjunct Professor at Department of Environmental Sciences, Computer Science, and Statistics, Ca’ Foscari University of Venice, Venice, Italy"
 repository-code: "https://github.com/majidniazkar/lowflow-frequency-analysis"
 license: MIT
-version: 1.1.0
-date-released: "<2026-10-06>"
-doi: "<10.5281/zenodo.XXXXXXX>"
+version: 1.2.0
+date-released: "2026-10-06"
+#doi: "<10.5281/zenodo.XXXXXXX>"
 abstract: >-
   Univariate and bivariate frequency analysis of annual and seasonal minimum
   river discharge, in Python and in R. Block-minimum extraction with coverage
