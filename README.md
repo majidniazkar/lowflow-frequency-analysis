@@ -202,7 +202,7 @@ this repository" button from it.
 
 ```
 <AUTHOR>. lowflow: extreme low-flow (drought) frequency analysis.
-Version 1.1.0, 2026. DOI: [[<10.5281/zenodo.23182321>](https://doi.org/10.5281/zenodo.23182321)](https://doi.org/10.5281/zenodo.23182321)
+Version 1.2.0, 2026. DOI: https://doi.org/10.5281/zenodo.23182321
 https://github.com/majidniazkar/lowflow-frequency-analysis
 ```
 
